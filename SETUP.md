@@ -1,6 +1,6 @@
 # SETUP.md — natural-language setup guide
 
-> **Hey Claude, you're reading this because the user asked you to set up the Notion Agent Orchestrator for them. Follow this document end-to-end. Use TodoWrite to track progress. Pause and ask the user only when an action requires their browser, their account, or a credential you can't generate.**
+> **Hey Claude, you're reading this because the user asked you to set up the Notion Architect and Agent Swarm for them. Follow this document end-to-end. Use TodoWrite to track progress. Pause and ask the user only when an action requires their browser, their account, or a credential you can't generate.**
 
 This guide stands up the entire system from a fresh clone. ~60 minutes if you (Claude) drive most of it; ~90 minutes manual.
 
@@ -235,7 +235,7 @@ The agent will reply with 4 OAuth URLs. Click each (links expire in 10 min):
 ```bash
 cd web-app
 railway login
-railway init --name "notion-agent-orchestrator"
+railway init --name "notion-architect-and-agent-swarm"
 railway add --service web    # accept the prompt to create empty service
 railway service web          # link this directory to that service
 ```

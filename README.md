@@ -1,4 +1,4 @@
-# Notion Agent Orchestrator
+# Notion Architect and Agent Swarm
 
 A complete, two-layer operations system that turns Notion into a **conversational agent fleet** — one orchestrator brain you can talk to from a web app or from Slack, plus 11 background agents inside Notion that handle automated workflows (client onboarding, finance, content, community growth, reporting, etc.).
 
@@ -69,7 +69,7 @@ Detailed architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 ## Repo layout
 
 ```
-notion-agent-orchestrator/
+notion-architect-and-agent-swarm/
 ├── README.md                 ← you are here
 ├── SETUP.md                  ← natural-language setup guide (Claude reads this)
 ├── .env.example              ← every env var across both layers

@@ -17,7 +17,7 @@ This is the actual click-by-click for everything in [SETUP.md](../SETUP.md) phas
 ### 3.1 Anthropic API key
 
 1. https://console.anthropic.com/settings/keys
-2. **Create Key** → name it `notion-agent-orchestrator` → copy the value (`sk-ant-api03-...`)
+2. **Create Key** → name it `notion-architect-and-agent-swarm` → copy the value (`sk-ant-api03-...`)
 3. Save: `export ANTHROPIC_API_KEY=sk-ant-...`
 
 ### 3.2 Create the agent
@@ -131,7 +131,7 @@ The agent will reply with 4 links (each ~10 min TTL). Click each, authorize, clo
 ```bash
 cd web-app
 railway login
-railway init --name "notion-agent-orchestrator"
+railway init --name "notion-architect-and-agent-swarm"
 railway add --service web   # accept the prompt
 railway service web
 ```

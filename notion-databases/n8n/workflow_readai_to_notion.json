@@ -1,0 +1,97 @@
+{
+  "name": "Read.ai → Notion Meetings",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "readai-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\n\n// Read.ai sends different payload shapes depending on version\n// Normalize to a consistent shape\nconst meeting = body.meeting || body;\n\nconst title = meeting.title || meeting.name || 'Untitled Meeting';\nconst date = meeting.created_at || meeting.date || meeting.start_time || new Date().toISOString();\nconst recordingUrl = meeting.recording_url || meeting.video_url || '';\nconst summary = meeting.summary || meeting.overview || '';\nconst transcript = meeting.transcript || meeting.full_transcript || '';\n\n// Flatten attendees to a string\nconst attendeesRaw = meeting.attendees || meeting.participants || [];\nconst attendeesStr = attendeesRaw\n  .map(a => `${a.name || a.display_name || ''} <${a.email || ''}>`)\n  .filter(s => s.trim() !== '<>')\n  .join(', ');\n\n// Page content: summary + transcript\nconst pageContent = [\n  summary ? `## Summary\\n\\n${summary}` : '',\n  transcript ? `## Transcript\\n\\n${transcript}` : '',\n].filter(Boolean).join('\\n\\n');\n\nreturn [{\n  json: {\n    title,\n    date: date.split('T')[0], // YYYY-MM-DD\n    recordingUrl,\n    externalAttendees: attendeesStr,\n    summary,\n    pageContent,\n  }\n}];"
+      },
+      "id": "code-node",
+      "name": "Parse Read.ai Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "b33f9993-5266-43d4-ae0b-8dbf538438d9",
+          "mode": "id"
+        },
+        "title": "={{ $json.title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Date",
+              "type": "date",
+              "date": "={{ $json.date }}"
+            },
+            {
+              "key": "Source",
+              "type": "select",
+              "selectValue": "Read.ai"
+            },
+            {
+              "key": "External Attendees",
+              "type": "richText",
+              "textContent": "={{ $json.externalAttendees }}"
+            },
+            {
+              "key": "Summary",
+              "type": "richText",
+              "textContent": "={{ $json.summary }}"
+            },
+            {
+              "key": "Recording URL",
+              "type": "url",
+              "urlValue": "={{ $json.recordingUrl }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.pageContent }}"
+            }
+          ]
+        }
+      },
+      "id": "notion-node",
+      "name": "Create Notion Meeting Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Parse Read.ai Payload", "type": "main", "index": 0}]]
+    },
+    "Parse Read.ai Payload": {
+      "main": [[{"node": "Create Notion Meeting Page", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "ai-integraterz"
+  },
+  "_notes": "SETUP: 1) Import into n8n Cloud. 2) Activate webhook. 3) Copy the webhook URL. 4) In Read.ai → Settings → Webhooks → add the URL. 5) The Meeting Intelligence Notion Agent auto-triggers when the page is created."
+}

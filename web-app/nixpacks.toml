@@ -1,0 +1,4 @@
+providers = ["node"]
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm-11_x"]

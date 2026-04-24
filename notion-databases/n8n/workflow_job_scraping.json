@@ -1,0 +1,109 @@
+{
+  "name": "Job Scraping → Notion (Airtop)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 7 * * *"}]
+        }
+      },
+      "id": "schedule-node",
+      "name": "Daily 7AM Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Configure your target job boards here\nconst jobBoards = [\n  {\n    name: 'LinkedIn',\n    searchUrl: 'https://www.linkedin.com/jobs/search/?keywords=AI+consultant+OR+%22AI+implementation%22+OR+%22AI+automation%22&f_TPR=r86400',\n    keywords: ['AI consultant', 'AI implementation', 'AI automation', 'fractional AI']\n  },\n  {\n    name: 'Indeed',\n    searchUrl: 'https://www.indeed.com/jobs?q=AI+consultant+OR+AI+automation&sort=date&fromage=1',\n    keywords: ['AI consultant', 'AI automation']\n  }\n];\n\nreturn jobBoards.map(board => ({ json: board }));"
+      },
+      "id": "config-node",
+      "name": "Job Board Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.airtop.ai/v1/sessions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{"name": "Content-Type", "value": "application/json"}]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "url", "value": "={{ $json.searchUrl }}"},
+            {"name": "extraction", "value": "Extract all job listings visible on this page. For each job return: title, company, location, posted_date, job_url, brief description. Return as JSON array."}
+          ]
+        },
+        "options": {}
+      },
+      "id": "airtop-node",
+      "name": "Airtop Scrape Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "_notes": "Replace with actual Airtop n8n node when available. Add AIRTOP_API_KEY to credentials."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Airtop response and filter relevant jobs\nconst response = $input.first().json;\nconst jobs = response.result?.jobs || response.jobs || response.data || [];\n\n// Filter for relevance\nconst keywords = ['AI', 'automation', 'consultant', 'implementation', 'fractional', 'ChatGPT', 'Claude', 'LLM'];\nconst relevant = jobs.filter(job => {\n  const text = `${job.title} ${job.description}`.toLowerCase();\n  return keywords.some(kw => text.includes(kw.toLowerCase()));\n});\n\nreturn relevant.map(job => ({ json: {\n  title: job.title || 'Unknown Role',\n  company: job.company || 'Unknown',\n  location: job.location || '',\n  postedDate: job.posted_date || new Date().toISOString().split('T')[0],\n  jobUrl: job.job_url || job.url || '',\n  description: (job.description || '').substring(0, 500),\n}}));"
+      },
+      "id": "filter-node",
+      "name": "Filter Relevant Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "COMMUNITY_MEMBERS_DB_ID",
+          "mode": "id",
+          "_note": "Replace COMMUNITY_MEMBERS_DB_ID with the actual ID after running create_missing_dbs.py"
+        },
+        "title": "={{ $json.title }} @ {{ $json.company }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Notes",
+              "type": "richText",
+              "textContent": "={{ $json.location }} | {{ $json.postedDate }}\n\n{{ $json.description }}\n\nURL: {{ $json.jobUrl }}"
+            }
+          ]
+        }
+      },
+      "id": "notion-node",
+      "name": "Add Job Lead to Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1120, 300],
+      "_notes": "This creates job leads as pages. Consider a dedicated Job Leads database for production use."
+    }
+  ],
+  "connections": {
+    "Daily 7AM Schedule": {
+      "main": [[{"node": "Job Board Config", "type": "main", "index": 0}]]
+    },
+    "Job Board Config": {
+      "main": [[{"node": "Airtop Scrape Jobs", "type": "main", "index": 0}]]
+    },
+    "Airtop Scrape Jobs": {
+      "main": [[{"node": "Filter Relevant Jobs", "type": "main", "index": 0}]]
+    },
+    "Filter Relevant Jobs": {
+      "main": [[{"node": "Add Job Lead to Notion", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "_notes": "SETUP: 1) Import into n8n. 2) Add Airtop API key to credentials. 3) Update COMMUNITY_MEMBERS_DB_ID with real ID from create_missing_dbs.py output. 4) Add Notion credentials. 5) Activate workflow."
+}

@@ -1,0 +1,169 @@
+{
+  "name": "Stripe → Notion Invoices",
+  "nodes": [
+    {
+      "parameters": {
+        "events": [
+          "invoice.payment_succeeded",
+          "invoice.payment_failed"
+        ]
+      },
+      "id": "stripe-trigger",
+      "name": "Stripe Trigger",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $input.first().json;\nconst type = event.type;\nconst invoice = event.data?.object || {};\n\nconst stripeInvoiceId = invoice.id || '';\nconst amount = (invoice.amount_paid || invoice.amount_due || 0) / 100;\nconst customerEmail = invoice.customer_email || '';\nconst status = type === 'invoice.payment_succeeded' ? 'Paid' : 'Payment Failed';\nconst paidDate = type === 'invoice.payment_succeeded' \n  ? new Date(invoice.status_transitions?.paid_at * 1000).toISOString().split('T')[0]\n  : null;\n\nreturn [{\n  json: { stripeInvoiceId, amount, customerEmail, status, paidDate }\n}];"
+      },
+      "id": "parse-stripe",
+      "name": "Parse Stripe Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "5b824640-fb43-4d32-b5ce-6f5010af75fc",
+          "mode": "id"
+        },
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Stripe ID",
+              "condition": "equals",
+              "richTextValue": "={{ $json.stripeInvoiceId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-notion",
+      "name": "Find Invoice in Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "found-check",
+              "leftValue": "={{ $json.results?.length }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-found",
+      "name": "Invoice Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $json.results[0].id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status",
+              "type": "select",
+              "selectValue": "={{ $('Parse Stripe Event').item.json.status }}"
+            },
+            {
+              "key": "Paid Date",
+              "type": "date",
+              "date": "={{ $('Parse Stripe Event').item.json.paidDate }}"
+            }
+          ]
+        }
+      },
+      "id": "update-notion",
+      "name": "Update Existing Invoice",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "5b824640-fb43-4d32-b5ce-6f5010af75fc",
+          "mode": "id"
+        },
+        "title": "={{ $('Parse Stripe Event').item.json.stripeInvoiceId }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Amount",
+              "type": "number",
+              "numberValue": "={{ $('Parse Stripe Event').item.json.amount }}"
+            },
+            {
+              "key": "Status",
+              "type": "select",
+              "selectValue": "={{ $('Parse Stripe Event').item.json.status }}"
+            },
+            {
+              "key": "Stripe ID",
+              "type": "richText",
+              "textContent": "={{ $('Parse Stripe Event').item.json.stripeInvoiceId }}"
+            },
+            {
+              "key": "Paid Date",
+              "type": "date",
+              "date": "={{ $('Parse Stripe Event').item.json.paidDate }}"
+            }
+          ]
+        }
+      },
+      "id": "create-notion",
+      "name": "Create New Invoice",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1120, 420]
+    }
+  ],
+  "connections": {
+    "Stripe Trigger": {
+      "main": [[{"node": "Parse Stripe Event", "type": "main", "index": 0}]]
+    },
+    "Parse Stripe Event": {
+      "main": [[{"node": "Find Invoice in Notion", "type": "main", "index": 0}]]
+    },
+    "Find Invoice in Notion": {
+      "main": [[{"node": "Invoice Found?", "type": "main", "index": 0}]]
+    },
+    "Invoice Found?": {
+      "main": [
+        [{"node": "Update Existing Invoice", "type": "main", "index": 0}],
+        [{"node": "Create New Invoice", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "_notes": "SETUP: 1) Import into n8n Cloud. 2) Add Stripe credentials. 3) Add Notion credentials. 4) In Stripe Dashboard → Developers → Webhooks → add n8n webhook URL, select events: invoice.payment_succeeded and invoice.payment_failed."
+}

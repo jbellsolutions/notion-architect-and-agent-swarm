@@ -2,6 +2,16 @@
 
 A complete, two-layer operations system that turns Notion into a **conversational agent fleet** — one orchestrator brain you can talk to from a web app or from Slack, plus 11 background agents inside Notion that handle automated workflows (client onboarding, finance, content, community growth, reporting, etc.).
 
+### 📺 Watch the 5-minute walkthrough
+
+[![Watch the walkthrough](https://cdn.loom.com/sessions/thumbnails/28ecdb9843a748ce99b154fa6a071517-with-play.gif)](https://www.loom.com/share/28ecdb9843a748ce99b154fa6a071517)
+
+### 🎯 Want this built for your business? Book a free AI audit
+
+[![Book a free AI audit](https://img.shields.io/badge/Book%20a%20free%20AI%20audit-aiintegraterz.com%2Faudit-d97757?style=for-the-badge&logoColor=white)](https://aiintegraterz.com/audit)
+
+---
+
 > **🚀 New to this repo? Open it in Claude Code (or paste this URL into Claude.ai with the GitHub connector) and say:**
 >
 > > **"Hey Claude, set this up for me. Read SETUP.md and walk me through every step."**

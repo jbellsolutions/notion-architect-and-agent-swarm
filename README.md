@@ -43,6 +43,8 @@ A complete, two-layer operations system that turns Notion into a **conversationa
 
 **One brain across all of it**: A single Claude Managed Agent (Opus 4.7) with the Composio Tool Router attached as an MCP server, giving the orchestrator access to **Notion + Slack + Gmail + Google Calendar** through one credential.
 
+**Built to stay up**: Postgres-backed session persistence (threads survive deploys), 5-minute synthetic supervisor that runs a real PONG turn through the agent and Slack-alerts on failure, build-failure webhooks, and an auth-gated `/admin/status` dashboard. See [docs/RELIABILITY.md](docs/RELIABILITY.md).
+
 ---
 
 ## Architecture in one picture
@@ -100,6 +102,7 @@ notion-architect-and-agent-swarm/
     ├── PHASE_1_WALKTHROUGH.md   ← clicks for the 12 Notion Custom Agents
     ├── PHASE_2_WALKTHROUGH.md   ← Railway + Anthropic + Composio + Slack
     ├── SLACK_BRIDGE_SETUP.md    ← Slack app manifest + install
+    ├── RELIABILITY.md           ← always-on architecture + supervisor setup
     └── HANDOFF_NOTES.md         ← original team handoff context
 ```
 

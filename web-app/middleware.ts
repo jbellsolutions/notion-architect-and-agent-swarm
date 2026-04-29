@@ -7,6 +7,8 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/api/login") ||
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/api/slack/") ||
+    pathname.startsWith("/api/cron/") ||
+    pathname.startsWith("/api/webhooks/") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
   ) return NextResponse.next();
